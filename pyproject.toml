@@ -17,5 +17,5 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "black[jupyter]>=25.9.0",
+    "ruff>=0.14.0",
 ]
