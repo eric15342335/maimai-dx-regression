@@ -2,12 +2,12 @@
 
 ## Before begining
 
-* Without filtering *outlier*(debatable) data:
-  * Very sensitive to `train_test_split()` `random_state` 
+* Very sensitive to `train_test_split()` data distribution
+  * E.g. model tends to get better performance on `random_state=42` but worse on random seeds like `random_state=None`
+* Without filtering *outlier* (debatable) data:
   * Linear Regression: $R^2 \leq 0.1$
   * Random Forest Regression: $R^2 \leq 0.2$
 * With filtering *outlier* data (e.g. `Chart Constant >= 10.5, Achv >= 85`):
-  * Still somewhat fluctuating depending on training or testing data distribution
   * Linear Regression: $R^2 \leq 0.3$
   * Random Forest Regression: $R^2 \leq 0.4$
 * Key predictors missing
