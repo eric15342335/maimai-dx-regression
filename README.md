@@ -1,6 +1,6 @@
 # predicting maimai DX Achievement rate
 
-## Before begining
+## Before beginning
 
 * Very sensitive to `train_test_split()` data distribution
   * E.g. model tends to get better performance on `random_state=42` but worse on random seeds like `random_state=None`
@@ -47,7 +47,7 @@ This project uses the [`uv`](https://docs.astral.sh/uv/) package manager.
 ```bash
 git clone https://github.com/eric15342335/maimai-dx-regression
 cd maimai-dx-regression
-git submodule update --init --recursive --remote
+git submodule update --init --recursive --remote # You can skip this if you don't want to obtain the latest arcade-songs-fetch data
 pip install -U uv
 uv sync
 ```
