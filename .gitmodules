@@ -1,0 +1,3 @@
+[submodule "arcade-songs-fetch"]
+	path = arcade-songs-fetch
+	url = https://github.com/zetaraku/arcade-songs-fetch
