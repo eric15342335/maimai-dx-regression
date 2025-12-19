@@ -40,6 +40,20 @@ Thanks <https://github.com/zetaraku/arcade-songs-fetch> for the effort!
 
 Run the maimai-related scripts, and export the SQLite databases to CSV files (e.g. by using an VSCode SQLite extension).
 
+Quirks I have been running into:
+
+* Google API key needed for fetching spreadsheet data
+* For Windows, `pnpm config set script-shell "/path/to/bash.exe"` is needed (using `pnpm` as an example here)
+* Comment out these in `tsconfig.json`:
+
+```json
+  // This is an alias to @tsconfig/node16: https://github.com/tsconfig/bases
+  "extends": "ts-node/node16/tsconfig.json",
+```
+
+* For `pnpm`, make sure to run `pnpm approve-builds` to download SQLite binaries, otherwise it will error out when running the scripts.
+* In `package.json`, comment out `maimai:fetch-images` in `maimai:all` to skip fetching images as we are obviously not training an Convolutional Neural Network (CNN) here to add additional features to our already small dataset (hypothesis: anime girls in the song images might affect player performance). Also, comment out `maimai:fetch-versions` as I don't have an MAIMAI JP account.
+
 ## How to run
 
 This project uses the [`uv`](https://docs.astral.sh/uv/) package manager.
@@ -57,6 +71,8 @@ uv sync
 Then, open `model.ipynb` in VSCode, activate the `.venv` virtual environment, and run the notebook cells step by step.
 
 ## Some other visualizations
+
+This visualization is generated via [this script](./visualization.py).
 
 ![Chart Constant vs Achievement Rate scatter plot](./assets/chart-constant-vs-Achv-scatterplot.png)
 
