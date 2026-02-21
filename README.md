@@ -2,20 +2,9 @@
 
 ## Before beginning
 
-* Very sensitive to `train_test_split()` data distribution
-  * E.g. model tends to get better performance on `random_state=42` but worse on random seeds like `random_state=None`
-  * Author note: This might be due to future data leakage, where the `Chart Constant` serve as a proxy for timestamp, because player skill generally improves over time and able to play harder songs later.
-* Without filtering *outlier* (debatable) data:
-  * Linear Regression: $R^2 \leq 0.1$
-  * Random Forest Regression: $R^2 \leq 0.2$
-* With filtering *outlier* data (e.g. `Achv >= 85`):
-  * Linear Regression: $R^2 \leq 0.3$
-  * Random Forest Regression: $R^2 \leq 0.4$
 * Key predictors missing
-  * When the player played the songs
-  * Number of retries
+  * When the player played the songs (currently only have the last played date)
   * Player's physical and mental condition when playing the songs
-  * `noteCount` data missing for some songs
   * (Data limitation) Only best scores are recorded, not all of the attempts. This might skew results towards [Extreme Value Theorem](https://en.wikipedia.org/wiki/Fisher%E2%80%93Tippett%E2%80%93Gnedenko_theorem).
 
 ## How to obtain the CSV dataset
