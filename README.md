@@ -6,6 +6,15 @@
   * When the player played the songs (currently only have the last played date)
   * Player's physical and mental condition when playing the songs
   * (Data limitation) Only best scores are recorded, not all of the attempts. This might skew results towards [Extreme Value Theorem](https://en.wikipedia.org/wiki/Fisher%E2%80%93Tippett%E2%80%93Gnedenko_theorem).
+* We don't know the objective of the prediction:
+  * Predict the next play? -> sort data by `Last Played` and perform a time series split
+    * But this gives poor test set performance, because the test data will have unseen values of `Last Played`, and the model might not generalize well to unseen values.
+  * Predict the songs that will be released in the future? -> sort data by `releaseDate` and perform a time series split
+    * Then the model is useless for predicting songs that are already released, which are the majority of the songs in the dataset.
+
+Not to mention that I smell some data leakage somewhere in our dataset and/or training code, as when I switch the sorting method, test set size, etc., the performance changes drastically.
+
+Not sure if <https://github.com/google-research/tabfm> will improve the accuracy of the predictions, but if the above questions are not answered, the model will be useless in practice. My disclaimer: Better to treat this project as an Exploratory Data Analysis (EDA) project rather than a real score prediction project.
 
 ## How to obtain the CSV dataset
 
@@ -23,22 +32,87 @@ javascript:(function(d){if(["https://maimaidx.jp","https://maimaidx-eng.com"].in
 
 Then click "Load all scores", copy the results, and paste it into your spreadsheet software (e.g. Excel), and export it as CSV (Comma-Separated Values, UTF-8) format.
 
+---
+
 ### bpm.csv, songs.csv
 
 Thanks <https://github.com/zetaraku/arcade-songs-fetch> for the effort!
 
 Run the maimai-related scripts, and export the SQLite databases to CSV files (e.g. by using an VSCode SQLite extension).
 
-Quirks I have been running into:
+Steps:
 
-* Google API key needed for fetching spreadsheet data
-* For Windows, `pnpm config set script-shell "/path/to/bash.exe"` is needed (using `pnpm` as an example here)
+* `pnpm install`
+* `pnpm approve-builds` and pick `sqlite3`, `puppeteer` and allow them to run.
+  If you forget to approve them, delete `pnpm-workspace.yaml` and run `pnpm approve-builds` again.
+* Fill in the `.env`:
+
+```ini
+# required in maimai/fetch-intl-sheets
+MAIMAI_INTL_SEGA_ID='fill in'
+MAIMAI_INTL_SEGA_PASSWORD='fill in'
+# required in maimai/fetch-internal-levels
+GOOGLE_API_KEY='fill in'
+# required in maimai/fetch-extras-v2 & maimai/fetch-intl-sheets
+USER_AGENT='Windows 11 Node.JS github.com/zetaraku/arcade-songs-fetch'
+```
+
+* For Windows, `pnpm config set script-shell "/path/to/bash.exe"` is needed (using `pnpm` as an example here).
+  * For example, replace `/path/to/bash.exe` with the output of `where.exe bash`.
+
 * Comment out these in `tsconfig.json`:
 
 ```json
   // This is an alias to @tsconfig/node16: https://github.com/tsconfig/bases
   "extends": "ts-node/node16/tsconfig.json",
 ```
+
+Otherwise you will encounter this error:
+
+```ts
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
+           ^
+TSError: ⨯ Unable to compile TypeScript:
+error TS6053: File '@tsconfig/node16/tsconfig.json' not found.
+```
+
+* Remove `maimai:fetch-images maimai:fetch-versions` from `maimai:all` in `package.json`, since they are slow to run:
+
+```diff
+diff --git a/package.json b/package.json
+index 492cfd1..c45c095 100644
+--- a/package.json
++++ b/package.json
+@@ -8,7 +8,7 @@
+     "all:gen-json": "npm-run-all maimai:gen-json chunithm:gen-json wacca:gen-json taiko:gen-json jubeat:gen-json sdvx:gen-json ongeki:gen-json gc:gen-json diva:gen-json popn:gen-json drs:gen-json ddr:gen-json nostalgia:gen-json crossbeats:gen-json rb:gen-json gitadora:gen-json polarischord:gen-json museca:gen-json && npm run any:gen-json",
+     "all:upload-data": "npm-run-all maimai:upload-data chunithm:upload-data wacca:upload-data taiko:upload-data jubeat:upload-data sdvx:upload-data ongeki:upload-data gc:upload-data diva:upload-data popn:upload-data drs:upload-data ddr:upload-data nostalgia:upload-data crossbeats:upload-data rb:upload-data gitadora:upload-data polarischord:upload-data museca:upload-data any:upload-data",
+     "# run-all scripts": "",
+- "maimai:all": "npm-run-all maimai:fetch-songs maimai:gen-wiki-list maimai:fetch-images maimai:fetch-versions maimai:fetch-intl-versions maimai:fetch-intl-sheets maimai:fetch-cn-sheets maimai:fetch-extras-v2 maimai:fetch-internal-levels maimai:gen-json maimai:upload-data",
++ "maimai:all": "npm-run-all maimai:fetch-songs maimai:gen-wiki-list maimai:fetch-intl-versions maimai:fetch-intl-sheets maimai:fetch-cn-sheets maimai:fetch-extras-v2 maimai:fetch-internal-levels maimai:gen-json maimai:upload-data",
+     "chunithm:all": "npm-run-all chunithm:fetch-songs chunithm:gen-wiki-list chunithm:fetch-images chunithm:fetch-intl-sheets chunithm:fetch-extras chunithm:fetch-sheet-extras-v2 chunithm:fetch-internal-levels chunithm:gen-json chunithm:upload-data",
+     "wacca:all": "npm-run-all wacca:fetch-songs wacca:fetch-images wacca:gen-json wacca:upload-data",
+     "taiko:all": "npm-run-all taiko:fetch-songs taiko:gen-json taiko:upload-data",
+```
+
+Then finally, you can run `pnpm run maimai:all` to generate the SQLite file.
+
+If things does not work, e.g. you encountered:
+
+```bash
+arcade-songs-fetch\src\maimai\fetch-intl-versions.ts:81
+    throw new Error('An error occurred while fetching the page.');
+          ^
+Error: An error occurred while fetching the page
+```
+
+Disabling any VPN/proxy/network interventing software might help.
+
+After all fetching has finished, retrieve the data in `data/maimai/db.sqlite3`:
+
+* `bpm.csv`: `SongExtras` table
+* `songs.csv`: `SheetExtras` table
+
+---
 
 ### playcount.csv
 
@@ -48,7 +122,7 @@ Go to <https://maimaidx-eng.com/maimai-mobile/record/musicGenre/search/?genre=99
 
 ```js
 (async function() {
-    const REQUEST_DELAY = 500;
+    const REQUEST_DELAY = 100;
     const STORAGE_KEY = 'maimai_full_extraction_data';
     const DIFFS = [0, 1, 2, 3, 4];
 
@@ -232,9 +306,6 @@ Go to <https://maimaidx-eng.com/maimai-mobile/record/musicGenre/search/?genre=99
 })();
 ```
 
-* For `pnpm`, make sure to run `pnpm approve-builds` to download SQLite binaries, otherwise it will error out when running the scripts.
-* In `package.json`, comment out `maimai:fetch-images` in `maimai:all` to skip fetching images as we are obviously not training an Convolutional Neural Network (CNN) here to add additional features to our already small dataset (hypothesis: anime girls in the song images might affect player performance). Also, comment out `maimai:fetch-versions` as I don't have an MAIMAI JP account.
-
 ## How to run
 
 This project uses the [`uv`](https://docs.astral.sh/uv/) package manager.
@@ -259,10 +330,11 @@ This visualization is generated via [this script](./visualization.py).
 
 ## Todo
 
-* Add more details about the instructions on this README.md
 * Write a blog on my personal website, talking about how'd I get till here~
 * Tackle with the flawed assumptions of the data/ML pipeline itself (e.g. future data leakage for train/test split, missing timestamp data, etc)
 
 Discussions are welcome! ~~I love Salt, do you?~~
+
+[My player profile (maimai DX international)](https://otohi.me/dxi/p/eric15342335)
 
 [Back to top](#predicting-maimai-dx-achievement-rate)
